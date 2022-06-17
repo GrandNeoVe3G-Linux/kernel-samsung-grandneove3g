@@ -31,10 +31,10 @@ typedef struct {
 #define KUIDT_INIT(value) (kuid_t){ value }
 #define KGIDT_INIT(value) (kgid_t){ value }
 
-static inline uid_t __kuid_val(kuid_t uid)
-{
-	return uid.val;
-}
+ static inline uid_t __kuid_val(kuid_t uid)
+ {
+         return uid.val;
+ }
 
 static inline gid_t __kgid_val(kgid_t gid)
 {

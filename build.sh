@@ -10,7 +10,7 @@
 set -e -o pipefail
 
 PLATFORM=sc8830
-NAME=RZ_kernel
+NAME=hybris_kernel
 VERSION=v1.0
 
 export ARCH=arm
@@ -23,7 +23,7 @@ KERNEL_IMAGE=${KERNEL_ZIP}/tools/Image
 DT_IMG=${KERNEL_ZIP}/tools/dt.img
 EXTERNAL_MODULE_PATH=${KERNEL_PATH}/external_module
 OUTPUT_PATH=${KERNEL_PATH}/output
-DEFCONFIG=rz_cp_defconfig
+DEFCONFIG=hybris-gndneove3g_defconfig
 
 JOBS=`grep processor /proc/cpuinfo | wc -l`
 
@@ -54,8 +54,8 @@ function build() {
 	make O=output -j${JOBS};
 	make O=output -j${JOBS} dtbs;
 	./scripts/mkdtimg.sh -i ${KERNEL_PATH}/arch/arm/boot/dts/ -o dt.img;
-	find ${KERNEL_PATH} -name "Image" -exec mv -f {} ${KERNEL_ZIP}/tools \;
-	find ${KERNEL_PATH} -name "dt.img" -exec mv -f {} ${KERNEL_ZIP}/tools \;
+	#find ${KERNEL_PATH} -name "Image" -exec mv -f {} ${KERNEL_ZIP}/tools \;
+	#find ${KERNEL_PATH} -name "dt.img" -exec mv -f {} ${KERNEL_ZIP}/tools \;
 
 	BUILD_END=$(date +"%s");
 	DIFF=$(($BUILD_END - $BUILD_START));
@@ -69,7 +69,7 @@ function make_zip() {
 
 	cd ${KERNEL_PATH}/kernel_zip;
 	zip -r ${KERNEL_ZIP_NAME} ./;
-	mv ${KERNEL_ZIP_NAME} ${KERNEL_PATH};
+	cp ${KERNEL_ZIP_NAME} ${KERNEL_PATH};
 }
 
 function rm_if_exist() {
@@ -109,7 +109,7 @@ function main() {
 	read -p "Please specify Toolchain path: " tcpath;
 	if [ "${tcpath}" == "" ]; then
 		echo -e "$red"
-		export CROSS_COMPILE=/home/natsume/toolchain/linaro-4.9/bin/arm-eabi-;
+		export CROSS_COMPILE=../arm-eabi-4.6/bin/arm-eabi-;
 		echo -e "No toolchain path found. Using default local one:$nocol ${CROSS_COMPILE}";
 	else
 		export CROSS_COMPILE=${tcpath};
