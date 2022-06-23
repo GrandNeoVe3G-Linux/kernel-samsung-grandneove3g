@@ -53,6 +53,7 @@ static enum power_supply_property sec_charger_props[] = {
         POWER_SUPPLY_PROP_HEALTH,
         POWER_SUPPLY_PROP_PRESENT,
         POWER_SUPPLY_PROP_ONLINE,
+        POWER_SUPPLY_PROP_VOLTAGE_MAX,
         POWER_SUPPLY_PROP_CURRENT_MAX,
         POWER_SUPPLY_PROP_CURRENT_AVG,
         POWER_SUPPLY_PROP_CURRENT_NOW,
@@ -209,6 +210,14 @@ static u8 SM5701_set_vbuslimit_current(
 	if (input_current >= 1200)
 		input_current = 1200;
 
+	if (charger->voltage_max != 4200) {
+		if (charger->cable_type != POWER_SUPPLY_TYPE_BATTERY) {
+			data &= ~SM5701_VBUSCNTL_VBUSLIMIT;
+			SM5701_reg_write(charger->SM5701->i2c, SM5701_VBUSCNTL, data);
+			pr_info("%s : SM5701_VBUSCNTL (Input current limit) : 0x%02x\n",
+				__func__, data);
+		}
+	}
 	if(input_current <= 100)
 		data &= ~SM5701_VBUSCNTL_VBUSLIMIT;
 	else if(input_current <= 500)
@@ -524,6 +533,9 @@ static int sec_chg_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 		break;
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		val->intval = charger->voltage_max;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -599,8 +611,15 @@ static int sec_chg_set_property(struct power_supply *psy,
 			/* Set float voltage */
 			pr_info("%s : float voltage (%dmV)\n",
 				__func__, charger->pdata->chg_float_voltage);
-			SM5701_set_batreg_voltage(
-				charger, charger->pdata->chg_float_voltage);
+			if (charger->pdata->chg_float_voltage > charger->voltage_max) {
+				SM5701_set_batreg_voltage(
+					charger, charger->voltage_max);
+				pr_info("%s : set float voltage to voltage_max (%dmV)\n",
+					__func__, charger->voltage_max);
+			} else {
+				SM5701_set_batreg_voltage(
+					charger, charger->pdata->chg_float_voltage);
+			}
 
 			/* if battery is removed, put vbus current limit to minimum */
 			if ((value.intval == POWER_SUPPLY_HEALTH_UNSPEC_FAILURE) ||
@@ -641,8 +660,11 @@ static int sec_chg_set_property(struct power_supply *psy,
 			pr_info("%s : topoff current (%dmA)\n",
 				__func__, charger->pdata->charging_current[
 				charger->cable_type].full_check_current_1st);
-			SM5701_set_topoff(
-				charger, charger->pdata->charging_current[
+			if (charger->voltage_max == 4200)
+				SM5701_set_topoff(charger, 100);
+			else
+				SM5701_set_topoff(
+					charger, charger->pdata->charging_current[
 					charger->cable_type].full_check_current_1st);
 
 			/* Set fast charge current */
@@ -651,6 +673,18 @@ static int sec_chg_set_property(struct power_supply *psy,
 			SM5701_set_fastchg_current(
 				charger, charger->charging_current);
 		}
+		break;
+	/* val->intval : float voltage */
+	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
+		charger->voltage_max = val->intval;
+		SM5701_set_batreg_voltage(
+				charger, charger->voltage_max);
+		pr_info("POWER_SUPPLY_PROP_VOLTAGE_MAX[%d]\n", charger->voltage_max);
+		if (charger->voltage_max == 4200)
+			SM5701_set_topoff(charger, 100);
+		else if (charger->voltage_max == 4350)
+			SM5701_set_topoff(charger, charger->pdata->charging_current[
+					charger->cable_type].full_check_current_1st);
 		break;
 	/* val->intval : input charging current */
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
@@ -716,6 +750,8 @@ static int SM5701_charger_probe(struct platform_device *pdev)
 			goto err_parse_dt;
 	} else
 		charger->pdata = pdata->charger_data;
+
+	charger->voltage_max = charger->pdata->chg_float_voltage;
 
 	platform_set_drvdata(pdev, charger);
 

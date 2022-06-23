@@ -97,6 +97,7 @@ struct SM5701_charger_data {
 	unsigned int	charging_current;
 	unsigned int	input_current_limit;
 	unsigned int	vbus_state;
+	unsigned int	voltage_max;
 	bool is_fullcharged;
 	int		aicl_on;
 	int		status;

@@ -53,7 +53,7 @@ function build() {
 	echo -e "Building kernel...$nocol";
 	make O=output -j${JOBS};
 	make O=output -j${JOBS} dtbs;
-	./scripts/mkdtimg.sh -i ${KERNEL_PATH}/arch/arm/boot/dts/ -o dt.img;
+	#./scripts/mkdtimg.sh -i ${KERNEL_PATH}/arch/arm/boot/dts/ -o dt.img;
 	#find ${KERNEL_PATH} -name "Image" -exec mv -f {} ${KERNEL_ZIP}/tools \;
 	#find ${KERNEL_PATH} -name "dt.img" -exec mv -f {} ${KERNEL_ZIP}/tools \;
 
@@ -109,7 +109,7 @@ function main() {
 	read -p "Please specify Toolchain path: " tcpath;
 	if [ "${tcpath}" == "" ]; then
 		echo -e "$red"
-		export CROSS_COMPILE=../arm-eabi-4.6/bin/arm-eabi-;
+		export CROSS_COMPILE=~/linaro-4.9/bin/arm-cortex_a7-linux-gnueabihf-;
 		echo -e "No toolchain path found. Using default local one:$nocol ${CROSS_COMPILE}";
 	else
 		export CROSS_COMPILE=${tcpath};
